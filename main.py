@@ -1,4 +1,4 @@
-from parsing import LogicExpr, expr
+from parsing import LogicExpr
 
 import sys
 
