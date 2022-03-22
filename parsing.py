@@ -1,14 +1,18 @@
-from operator import or_, ne, and_
+from operator import or_, ne, and_, eq
 import CombiParser as cp
 from typing import Callable
 
-# expr ::= xorExpr '|' expr | xorExpr 
-# xorExpr ::= andExpr '^' xorExpr | andExpr
-# andExpr ::= notExpr '&' andExpr | notExpr
+# expr ::= xorExpr '+' expr | xorExpr 
+## xorExpr ::= implExpr '^' xorExpr | implExpr
+## implExpr ::= equivExpr '->' implExpr | equivExpr
+## equivExpr ::= andExpr '<->' equivExpr | andExpr
+# andExpr ::= notExpr '*' andExpr | notExpr
 # notExpr ::= '-' term | term
 # term ::= 'T' | 'F' | '(' expr ')'
 
-expr, xorExpr, andExpr, notExpr, term = cp.Parser(), cp.Parser(), cp.Parser(), cp.Parser(), cp.Parser()
+expr, xorExpr, implExpr, equivExpr = cp.Parser(), cp.Parser(), cp.Parser(), cp.Parser()
+andExpr, notExpr, term = cp.Parser(), cp.Parser(), cp.Parser()
+
 variableName = cp.Parser()
 
 class LogicExpr:
@@ -56,7 +60,7 @@ expr.setParser(
         cp.sequence(
             lambda e1, e2: LogicExpr.CombineBinary(e1, e2, or_),
             (xorExpr, True),
-            (cp.charParser('|'), False),
+            (cp.charParser('+'), False),
             (expr, True)
         ),
         xorExpr
@@ -67,9 +71,36 @@ xorExpr.setParser(
     cp.combine(
         cp.sequence(
             lambda e1, e2: LogicExpr.CombineBinary(e1, e2, ne),
-            (andExpr, True),
+            (implExpr, True),
             (cp.charParser('^'), False),
             (xorExpr, True)
+        ),
+        implExpr
+    )
+)
+
+implExpr.setParser(
+    cp.combine(
+        cp.sequence(
+            lambda e1, e2: LogicExpr.CombineBinary(e1, e2, lambda a, b: not a or b),
+            (equivExpr, True),
+            (cp.charParser('-'), False),
+            (cp.charParser('>'), False),
+            (implExpr, True)
+        ),
+        equivExpr
+    )
+)
+
+equivExpr.setParser(
+    cp.combine(
+        cp.sequence(
+            lambda e1, e2: LogicExpr.CombineBinary(e1, e2, eq),
+            (andExpr, True),
+            (cp.charParser('<'), False),
+            (cp.charParser('-'), False),
+            (cp.charParser('>'), False),
+            (equivExpr, True)
         ),
         andExpr
     )
@@ -80,7 +111,7 @@ andExpr.setParser(
         cp.sequence(
             lambda e1, e2: LogicExpr.CombineBinary(e1, e2, and_),
             (notExpr, True),
-            (cp.charParser('&'), False),
+            (cp.charParser('*'), False),
             (andExpr, True)
         ),
         notExpr
