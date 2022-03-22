@@ -31,19 +31,22 @@ def generateTruthTable(inputNames: list[str], rule: LogicExpr) -> list[list[bool
 
 class TruthTableApp(QMainWindow):
 
+    PARSE_ERROR_MESSAGE = "Could not parse logic expression"
+
     def __init__(self):
         super().__init__()
 
         self.initUI()
 
-        self.logic_expr_input: QLineEdit
-        self.generate_button: QPushButton
-        self.truth_table: QTableWidget
-
         self.generate_button.clicked.connect(self.generateTable)
 
     def initUI(self):
         uic.loadUi("truth_table_generator.ui", self)
+
+        self.logic_expr_input: QLineEdit
+        self.generate_button: QPushButton
+        self.truth_table: QTableWidget
+
         self.show()
 
     def generateTable(self):
@@ -51,15 +54,15 @@ class TruthTableApp(QMainWindow):
         
         try:
             logicExpr = LogicExpr.parse(rawExpression)
-        except:
+        except ValueError:
             self.showParseError()
             return
 
         inputNames = list(logicExpr.varNames)
+        headers = inputNames + ["Output"]
 
         truthTableData = generateTruthTable(inputNames, logicExpr)   
-
-        self.fillTable(inputNames + ["Output"], truthTableData)     
+        self.fillTable(headers, truthTableData)     
 
     def fillTable(self, headers: list[str], contents: list[list[str]]):
         self.truth_table.clear()
@@ -78,19 +81,8 @@ class TruthTableApp(QMainWindow):
     def showParseError(self):
         msg = QMessageBox(self)
         msg.setIcon(QMessageBox.Critical)
-        msg.setText("Could not parse logic expression")
+        msg.setText(self.PARSE_ERROR_MESSAGE)
         msg.exec()
-
-
-'''
-testExpr = "X&Y"
-
-test = expr.parse(preprocess(testExpr))
-
-print(preprocess(testExpr))
-print(test)
-print(test({"Y": True, "X": True}))
-'''
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
