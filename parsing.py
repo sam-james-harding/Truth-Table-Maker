@@ -9,6 +9,7 @@ from typing import Callable
 # term ::= 'T' | 'F' | '(' expr ')'
 
 expr, xorExpr, andExpr, notExpr, term = cp.Parser(), cp.Parser(), cp.Parser(), cp.Parser(), cp.Parser()
+variableName = cp.Parser()
 
 class LogicExpr:
     LogicFunc = Callable[[dict[str, bool]], bool]
@@ -101,7 +102,7 @@ term.setParser(
     cp.combine(
         cp.sequence(
             lambda name: LogicExpr.Variable(name),
-            (cp.parseIf(lambda c: c.isalpha() and c not in ("T", "F")), True)
+            (variableName, True)
         ),
         cp.sequence(
             lambda: LogicExpr.Constant(True),
@@ -117,5 +118,12 @@ term.setParser(
             (expr, True),
             (cp.charParser(')'), False)
         )
+    )
+)
+
+variableName.setParser(
+    cp.parseWhere(
+        lambda token: token not in ("T", "F"),
+        cp.token
     )
 )
