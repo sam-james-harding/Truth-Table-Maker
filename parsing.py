@@ -3,12 +3,12 @@ import CombiParser as cp
 from typing import Callable
 
 # expr ::= xorExpr '+' expr | xorExpr 
-## xorExpr ::= implExpr '^' xorExpr | implExpr
-## implExpr ::= equivExpr '->' implExpr | equivExpr
-## equivExpr ::= andExpr '<->' equivExpr | andExpr
+# xorExpr ::= implExpr '^' xorExpr | implExpr
+# implExpr ::= equivExpr '->' implExpr | equivExpr
+# equivExpr ::= andExpr '<->' equivExpr | andExpr
 # andExpr ::= notExpr '*' andExpr | notExpr
 # notExpr ::= '-' term | term
-# term ::= 'T' | 'F' | '(' expr ')'
+# term ::= 'T' | 'F' | '(' expr ')' | variableName
 
 expr, xorExpr, implExpr, equivExpr = cp.Parser(), cp.Parser(), cp.Parser(), cp.Parser()
 andExpr, notExpr, term = cp.Parser(), cp.Parser(), cp.Parser()
