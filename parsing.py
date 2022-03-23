@@ -15,6 +15,15 @@ andExpr, notExpr, term = cp.Parser(), cp.Parser(), cp.Parser()
 
 variableName = cp.Parser()
 
+def stringParser(string: str):
+    charParsers = [(cp.charParser(char), True) for char in string]
+
+    return cp.sequence(
+        lambda *chars: "".join(chars),
+        *charParsers
+    )
+
+
 class LogicExpr:
     LogicFunc = Callable[[dict[str, bool]], bool]
 
@@ -50,70 +59,53 @@ class LogicExpr:
 
     @staticmethod
     def parse(rawInput: str) -> 'LogicExpr':
-        # remove all spaces
-        preprocessed = "".join([c for c in rawInput if not c.isspace()])
+        return expr.parse(rawInput)
 
-        return expr.parse(preprocessed)
+
+def binaryOpParser(parser1: cp.Parser, parser2: cp.Parser, opString: str, binFunc: Callable) -> cp.Parser:
+    return cp.sequence(
+        lambda e1, e2: LogicExpr.CombineBinary(e1, e2, binFunc),
+        (cp.whitespaceParser, False),
+        (parser1, True),
+        (cp.whitespaceParser, False),
+        (stringParser(opString), False),
+        (cp.whitespaceParser, False),
+        (parser2, True),
+        (cp.whitespaceParser, False)
+    )
+
 
 expr.setParser(
     cp.combine(
-        cp.sequence(
-            lambda e1, e2: LogicExpr.CombineBinary(e1, e2, or_),
-            (xorExpr, True),
-            (cp.charParser('+'), False),
-            (expr, True)
-        ),
+        binaryOpParser(xorExpr, expr, "+", or_),
         xorExpr
     )
 )
 
 xorExpr.setParser(
     cp.combine(
-        cp.sequence(
-            lambda e1, e2: LogicExpr.CombineBinary(e1, e2, ne),
-            (implExpr, True),
-            (cp.charParser('^'), False),
-            (xorExpr, True)
-        ),
+        binaryOpParser(implExpr, xorExpr, "^", ne),
         implExpr
     )
 )
 
 implExpr.setParser(
     cp.combine(
-        cp.sequence(
-            lambda e1, e2: LogicExpr.CombineBinary(e1, e2, lambda a, b: not a or b),
-            (equivExpr, True),
-            (cp.charParser('-'), False),
-            (cp.charParser('>'), False),
-            (implExpr, True)
-        ),
+        binaryOpParser(equivExpr, implExpr, "->", lambda a, b: not a or b),
         equivExpr
     )
 )
 
 equivExpr.setParser(
     cp.combine(
-        cp.sequence(
-            lambda e1, e2: LogicExpr.CombineBinary(e1, e2, eq),
-            (andExpr, True),
-            (cp.charParser('<'), False),
-            (cp.charParser('-'), False),
-            (cp.charParser('>'), False),
-            (equivExpr, True)
-        ),
+        binaryOpParser(andExpr, equivExpr, "<->", eq),
         andExpr
     )
 )
 
 andExpr.setParser(
     cp.combine(
-        cp.sequence(
-            lambda e1, e2: LogicExpr.CombineBinary(e1, e2, and_),
-            (notExpr, True),
-            (cp.charParser('*'), False),
-            (andExpr, True)
-        ),
+        binaryOpParser(notExpr, andExpr, "*", and_),
         notExpr
     )
 )
@@ -123,6 +115,7 @@ notExpr.setParser(
         cp.sequence(
             lambda e: LogicExpr(lambda vals: not e(vals), e.varNames),
             (cp.charParser('-'), False),
+            (cp.whitespaceParser, False),
             (term, True)
         ),
         term
@@ -145,9 +138,11 @@ term.setParser(
         ),
         cp.sequence(
             lambda e: e,
+            (cp.whitespaceParser, False),
             (cp.charParser('('), False),
             (expr, True),
-            (cp.charParser(')'), False)
+            (cp.charParser(')'), False),
+            (cp.whitespaceParser, False),
         )
     )
 )
